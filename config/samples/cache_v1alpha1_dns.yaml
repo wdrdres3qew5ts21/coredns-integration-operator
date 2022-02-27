@@ -1,0 +1,6 @@
+apiVersion: cache.quay.io/v1alpha1
+kind: DNS
+metadata:
+  name: dns-sample
+spec:
+  # TODO(user): Add fields here

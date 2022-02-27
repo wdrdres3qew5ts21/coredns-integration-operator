@@ -16,22 +16,27 @@ operator-sdk olm install
 
 Build ตัวอย่างโครงโปรเจค
 ```
-make docker-build docker-push IMG="quay.io/linxianer12/coredns-integration-operator:0.0.4"
+make docker-build docker-push IMG="quay.io/linxianer12/coredns-integration-operator:0.0.6"
 ```
+
+เพิ่ม API Custom Resource
+
+operator-sdk create api --group cache --version v1alpha1 --kind DNS --resource --controller
+
 
 สร้าง Template Manifest กับอัพเดท Image Push ที่อยู่ใน `bundle/manifests`
 
 ```
-make bundle IMG="quay.io/linxianer12/coredns-integration-operator:0.0.4"
+make bundle IMG="quay.io/linxianer12/coredns-integration-operator:0.0.6"
 
-make bundle-build bundle-push BUNDLE_IMG="quay.io/linxianer12/coredns-integration-bundle:0.0.4"
+make bundle-build bundle-push BUNDLE_IMG="quay.io/linxianer12/coredns-integration-bundle:0.0.6"
 ```
 https://sdk.operatorframework.io/docs/overview/project-layout/
 
 
 ลง Operator Catalog ใหม่พร้อมติดตั้งใน Namespace Kubernetes Context ที่เรากำลังอยู่
 ```
-operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:0.0.4
+operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:0.0.6
 ```
 ลบการติดตั้ง Catalog 
 operator-sdk cleanup coredns-integration-operator

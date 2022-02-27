@@ -78,11 +78,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.MemcachedReconciler{
+	if err = (&controllers.DNSReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Memcached")
+		setupLog.Error(err, "unable to create controller", "controller", "DNS")
+		os.Exit(1)
+	}
+	if err = (&controllers.DNSRecordReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "DNSRecord")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

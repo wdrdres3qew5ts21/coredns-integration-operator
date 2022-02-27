@@ -8,7 +8,7 @@ rules:
 - apiGroups:
   - cache.quay.io
   resources:
-  - memcacheds
+  - dns
   verbs:
   - create
   - delete
@@ -20,13 +20,39 @@ rules:
 - apiGroups:
   - cache.quay.io
   resources:
-  - memcacheds/finalizers
+  - dns/finalizers
   verbs:
   - update
 - apiGroups:
   - cache.quay.io
   resources:
-  - memcacheds/status
+  - dns/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - cache.quay.io
+  resources:
+  - dnsrecords
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cache.quay.io
+  resources:
+  - dnsrecords/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cache.quay.io
+  resources:
+  - dnsrecords/status
   verbs:
   - get
   - patch

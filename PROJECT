@@ -1,0 +1,19 @@
+domain: quay.io
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: coredns-integration-operator
+repo: github.com/wdrdres3qew5ts21/coredns-integration-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: quay.io
+  group: cache
+  kind: Memcached
+  path: github.com/wdrdres3qew5ts21/coredns-integration-operator/api/v1alpha1
+  version: v1alpha1
+version: "3"

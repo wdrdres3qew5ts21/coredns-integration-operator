@@ -1,5 +1,10 @@
 ### CoreDNS for mapping DNS Record like using in On-Premise Platform
 
+https://www.brighttalk.com/webcast/18106/470697?utm_source=brighttalk-portal&utm_medium=web&utm_campaign=channel-feed
+
+https://www.youtube.com/watch?v=89PdRvRUcPU&t=798s
+
+
 operator-sdk init --domain quay.io --repo github.com/wdrdres3qew5ts21/coredns-integration-operator
 
 ### layout Project

@@ -155,7 +155,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/linxianer12/coredns-integration-operator:0.0.6
+                image: quay.io/linxianer12/coredns-integration-operator:0.0.7
                 livenessProbe:
                   httpGet:
                     path: /healthz

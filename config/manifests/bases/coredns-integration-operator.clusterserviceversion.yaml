@@ -10,11 +10,6 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Memcached is the Schema for the memcacheds API
-      displayName: Memcached
-      kind: Memcached
-      name: memcacheds.cache.quay.io
-      version: v1alpha1
     - description: DNS is the Schema for the dns API
       displayName: DNS
       kind: DNS

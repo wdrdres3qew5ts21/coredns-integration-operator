@@ -39,7 +39,8 @@ make bundle-build bundle-push BUNDLE_IMG="quay.io/linxianer12/coredns-integratio
 https://sdk.operatorframework.io/docs/overview/project-layout/
 
 
-ลง Operator Catalog ใหม่พร้อมติดตั้งใน Namespace Kubernetes Context ที่เรากำลังอยู่
+### ลง Operator Catalog ใหม่พร้อมติดตั้งใน Namespace Kubernetes Context ที่เรากำลังอยู่
+ใช้คำสั่งเดียวจบ
 ```
 operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:0.0.6
 ```
@@ -53,3 +54,5 @@ operator-sdk cleanup coredns-integration-operator
 operator-sdk olm status --olm-namespace openshift-operator-lifecycle-manager
 
 ```
+
+cache.quay.io

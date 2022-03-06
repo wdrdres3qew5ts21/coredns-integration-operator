@@ -33,6 +33,10 @@ type DNSReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+var (
+	setupLog = ctrl.Log.WithName("setup")
+)
+
 //+kubebuilder:rbac:groups=cache.quay.io,resources=dns,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cache.quay.io,resources=dns/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cache.quay.io,resources=dns/finalizers,verbs=update
@@ -50,7 +54,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
-
+	setupLog.Info("DNS Controller", "DNS Controller: Vanila Log by Supakorn Working")
 	return ctrl.Result{}, nil
 }
 

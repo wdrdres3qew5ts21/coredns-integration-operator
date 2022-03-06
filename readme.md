@@ -59,7 +59,7 @@ https://gist.github.com/vsouza/77e6b20520d07652ed7d
 
 
 ### Build Script
-export IMAGE_VERSION=0.0.9
+export IMAGE_VERSION=0.0.12
 
 ./build-push-operator.sh 
 

@@ -61,14 +61,14 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
-	setupLog.Info("DNS Controller", "DNS Controller: Vanila Log by Supakorn Working")
+	setupLog.Info("DNS Controller: Vanila Log by Supakorn Working")
 
 	instance := &cachev1alpha1.DNSRecord{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
 
 	if err != nil {
 		if errors.IsNotFound(err) {
-			setupLog.Info("DNS Controller", "DNS Controller: Delete DaemonSet ;)")
+			setupLog.Info("DNS Controller: Delete DaemonSet ;)")
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
@@ -139,6 +139,19 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 					}},
 			}}
 		controllerutil.SetControllerReference(instance, dep, r.Scheme)
+
+		createMe := dep // Deployment instance from above // Create the service
+		setupLog.Info("DNS Controller: Try to create DaemonSet !")
+		err = r.Create(context.TODO(), createMe)
+		if err != nil {
+			// Creation failed
+			setupLog.Error(err, "DNS Controller: Create DaemonSet Error :(")
+			return reconcile.Result{}, err
+		} else {
+			// Creation was successful return nil, nil
+			setupLog.Info("DNS Controller: Create DaemonSet Successs :)")
+		}
+
 	}
 
 	return ctrl.Result{}, nil

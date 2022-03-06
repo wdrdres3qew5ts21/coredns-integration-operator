@@ -63,7 +63,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	// TODO(user): your logic here
 	setupLog.Info("DNS Controller: Vanila Log by Supakorn Working")
 
-	instance := &cachev1alpha1.DNSRecord{}
+	instance := &cachev1alpha1.DNS{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
 
 	if err != nil {
@@ -74,7 +74,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
-
+	setupLog.Info("DNS Controller: Escape Error from first error success")
 	found := &appsv1.Deployment{}
 	findMe := types.NamespacedName{
 		Name:      "myDeployment",
@@ -82,6 +82,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 	err = r.Client.Get(context.TODO(), findMe, found)
 
+	setupLog.Info("DNS Controller: Before Created DaemonSet")
 	if err != nil && errors.IsNotFound(err) {
 		// Creation logic
 		labels := map[string]string{
@@ -127,6 +128,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 									Name:  "MYSQL_ROOT_PASSWORD",
 									Value: "password",
 								}, {
+									Name:  "MYSQL_DATABASE",
 									Value: "visitors",
 								},
 								// {

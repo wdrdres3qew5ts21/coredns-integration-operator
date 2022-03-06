@@ -54,5 +54,16 @@ operator-sdk cleanup coredns-integration-operator
 operator-sdk olm status --olm-namespace openshift-operator-lifecycle-manager
 
 ```
+### Setup Go Environment
+https://gist.github.com/vsouza/77e6b20520d07652ed7d
 
-cache.quay.io
+
+### Build Script
+export IMAGE_VERSION=0.0.9
+
+./build-push-operator.sh 
+
+operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:$IMAGE_VERSION
+
+reference API Version 
+https://github.com/deepak1725/hello-operator2

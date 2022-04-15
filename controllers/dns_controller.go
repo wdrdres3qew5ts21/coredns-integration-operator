@@ -86,7 +86,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	if err != nil && errors.IsNotFound(err) {
 		// Creation logic
 		labels := map[string]string{
-			"app": "private-dns", "visitorssite_cr": instance.Name, "tier": "mysql",
+			"app": "private-dns" + instance.Name,
 		}
 		size := int32(1)
 		// userSecret := &corev1.EnvVarSource{
@@ -125,14 +125,11 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 							}},
 							Env: []corev1.EnvVar{
 								{
-									Name:  "MYSQL_ROOT_PASSWORD",
-									Value: "password",
-								}, {
-									Name:  "MYSQL_DATABASE",
-									Value: "visitors",
+									Name:  "TEST_VARIABLE",
+									Value: "thesis-chula-demo",
 								},
 								// {
-								// 	Name:      "MYSQL_USER",
+								// 	Name:      "TEST_REFERENCE",
 								// 	ValueFrom: userSecret,
 								// }, {
 								// 	ValueFrom: passwordSecret,

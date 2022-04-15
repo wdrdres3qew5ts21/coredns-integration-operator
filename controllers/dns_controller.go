@@ -126,7 +126,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 								}},
 						}},
 						Containers: []corev1.Container{{
-							Image: "quay.io/openshift/origin-coredns:4.5",
+							Image: "quay.io/openshift/origin-coredns:4.9",
 							Name:  "dns",
 							Ports: []corev1.ContainerPort{{
 								ContainerPort: 8053,

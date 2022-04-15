@@ -1,0 +1,53 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dns-config
+data:
+  Corefile: |
+    napzz-company.local:8053 {
+        reload 3s
+        erratic
+        errors
+        log stdout
+        file /etc/coredns/napzz-company.local
+    }
+    thesis.local:8053 {
+        reload 3s
+        erratic
+        errors
+        log stdout
+        file /etc/coredns/thesis.local
+    }
+  napzz-company.local: |
+    $TTL    1800
+    $ORIGIN napzz-company.local.
+
+    @ IN SOA dns domains (
+        2020031101   ; serial
+        300          ; refresh
+        1800         ; retry
+        14400        ; expire
+        300 )        ; minimum
+
+    ;PRIVATE_DNS_RECORD
+    backend-server        IN  A  192.168.18.4
+    database-server       IN  A  192.168.18.5
+    ;END_PRIVATE_DNS_RECORD
+  thesis.local: |
+    $TTL    1800
+    $ORIGIN thesis.local.
+
+    @ IN SOA dns domains (
+        2020031101   ; serial
+        300          ; refresh
+        1800         ; retry
+        14400        ; expire
+        300 )        ; minimum
+
+    ;PRIVATE_DNS_RECORD
+    ithesis        IN  A  192.168.18.4
+    chula-se       IN  A  192.168.18.5
+    mock      IN  A  192.168.18.5
+    reload      IN  A  192.168.18.5
+    update      IN  A  192.168.18.5
+    ;END_PRIVATE_DNS_RECORD

@@ -42,8 +42,10 @@ spec:
   keywords:
   - network
   links:
-  - name: Coredns Integration Operator
+  - name: Operator Repository
     url: https://coredns-integration-operator.domain
+  - name: Infrastructure Guide Line
+    url: https://github.com/wdrdres3qew5ts21/vm-kubevirt-integration
   maintainers:
   - email: 6370279821@student.chula.ac.th
     name: supakorn.trakulmaiphol

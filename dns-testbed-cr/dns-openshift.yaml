@@ -1,0 +1,15 @@
+apiVersion: operator.openshift.io/v1
+kind: DNS
+metadata:
+  generation: 4
+  name: default
+spec:
+  nodePlacement: {}
+  servers:
+    - forwardPlugin:
+        upstreams:
+          - '172.21.103.99:8053'
+      name: private-zone
+      zones:
+        - napzz-company.local
+        - thesis.local

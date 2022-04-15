@@ -1,0 +1,28 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: dns-napzz
+  labels:
+    app: dns
+spec:
+  ports:
+    - name: 8053-tcp
+      protocol: TCP
+      port: 8053
+      targetPort: 8053
+    - name: 8053-udp
+      protocol: UDP
+      port: 8053
+      targetPort: 8053
+  selector:
+    app: private-dnsnapzz
+  clusterIP: 172.21.103.99
+  clusterIPs:
+    - 172.21.103.99
+  type: ClusterIP
+  sessionAffinity: None
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+status:
+  loadBalancer: {}

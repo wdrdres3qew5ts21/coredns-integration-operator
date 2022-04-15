@@ -5,6 +5,8 @@ https://www.brighttalk.com/webcast/18106/470697?utm_source=brighttalk-portal&utm
 https://www.youtube.com/watch?v=89PdRvRUcPU&t=798s
 
 
+Base Image: https://quay.io/repository/openshift/origin-coredns?tab=info
+
 operator-sdk init --domain quay.io --repo github.com/wdrdres3qew5ts21/coredns-integration-operator
 
 ## layout Project
@@ -69,13 +71,14 @@ https://gist.github.com/vsouza/77e6b20520d07652ed7d
 
 
 ### Build Script
+เราจะทดสอบใน `private-dns` Namespace
 ```
 oc new-project private-dns
 oc apply -f oc apply -f permission 
 
 operator-sdk cleanup coredns-integration-operator
 
-export IMAGE_VERSION=0.0.18
+export IMAGE_VERSION=0.0.20
 
 ./build-push-operator.sh 
 

@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/linxianer12/coredns-integration-operator
-  newTag: 0.0.25
+  newTag: 0.0.36

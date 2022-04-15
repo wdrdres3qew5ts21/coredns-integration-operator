@@ -65,43 +65,98 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	setupLog.Info("DNS Controller: Vanila Log by Supakorn Working")
 
 	instance := &cachev1alpha1.DNS{}
-	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
+	err := r.Client.Get(context.Background(), req.NamespacedName, instance)
 
+	setupLog.Info("====== Validate Err Object =======")
+	setupLog.Error(err, "Here is Bug")
+	setupLog.Info("======================")
 	if err != nil {
 		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			setupLog.Info("DNS resource not found. Ignoring since object must be deleted")
 			setupLog.Info("DNS Controller: Delete DaemonSet ;)")
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+
+	// Initialize Variable template
+	replicasSize := int32(1)
+	configMapMode := int32(420)
+	dnsZoneConfigMap := "dns-config"
+	appName := "private-dns-"
+	fullAppInstanceName := appName + instance.Name
+
 	setupLog.Info("DNS Controller: Escape Error from first error success")
-	found := &appsv1.Deployment{}
 	findMe := types.NamespacedName{
-		Name:      "myDeployment",
+		Name:      instance.Name,
 		Namespace: instance.Namespace,
 	}
-	err = r.Client.Get(context.TODO(), findMe, found)
 
+	foundService := &corev1.Service{}
+	err = r.Client.Get(ctx, findMe, foundService)
+	setupLog.Info("DNS Controller: Before Created Service Endpoint")
+	if err != nil && errors.IsNotFound(err) {
+		// Create Kubernetes Service for resolve Private DNS Server
+		service := &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+			Name:      fullAppInstanceName,
+			Namespace: instance.Namespace,
+			Labels: map[string]string{
+				"app": fullAppInstanceName,
+			},
+		}, Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{{
+				Name:       "8053-tcp",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       8053,
+				TargetPort: intstr.IntOrString{IntVal: 8053},
+			}, {
+				Name:       "8053-udp",
+				Protocol:   corev1.ProtocolUDP,
+				Port:       8053,
+				TargetPort: intstr.IntOrString{IntVal: 8053},
+			}},
+			Selector: map[string]string{
+				"app": fullAppInstanceName,
+			},
+			// ClusterIP:  "172.21.103.99",
+			// ClusterIPs: []string{"172.21.103.99"},
+			Type: corev1.ServiceTypeClusterIP,
+		}}
+		controllerutil.SetControllerReference(instance, service, r.Scheme)
+
+		setupLog.Info("DNS Controller: Try to create Service Endpoint !")
+
+		err = r.Create(context.Background(), service)
+		if err != nil {
+			setupLog.Error(err, "DNS Controller: Create Service Endpoint Error :(")
+			return reconcile.Result{}, err
+		} else {
+			setupLog.Info("DNS Controller: Create Service Endpoint Successs :)")
+		}
+	}
+
+	found := &appsv1.Deployment{}
+	err = r.Client.Get(ctx, findMe, found)
 	setupLog.Info("DNS Controller: Before Created DaemonSet")
 	if err != nil && errors.IsNotFound(err) {
-		// initialize variable template
-		replicasSize := int32(1)
-		configMapMode := int32(420)
-		dnsZoneConfigMap := "dns-config"
-		appName := "private-dns-"
-		fullAppInstanceName := appName + instance.Name
+
 		// Creation logic
 		labels := map[string]string{
 			"app": fullAppInstanceName,
 		}
 
 		// Create DaemonSet for Private DNS Server
-
 		dep := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fullAppInstanceName,
 				Namespace: instance.Namespace,
+				Labels: map[string]string{
+					"app": fullAppInstanceName,
+				},
 			},
 			Spec: appsv1.DeploymentSpec{
 				Replicas: &replicasSize,
@@ -141,54 +196,14 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 									Name:  "TEST_VARIABLE",
 									Value: "thesis-chula-demo",
 								},
-								// {
-								// 	Name:      "TEST_REFERENCE",
-								// 	ValueFrom: userSecret,
-								// }, {
-								// 	ValueFrom: passwordSecret,
-								// },
 							}}},
 					}},
 			}}
-		// Create Kubernetes Service for resolve Private DNS Server
-		service := &corev1.Service{ObjectMeta: metav1.ObjectMeta{
-			Name:      fullAppInstanceName,
-			Namespace: instance.Namespace,
-		}, Spec: corev1.ServiceSpec{
-			Ports: []corev1.ServicePort{{
-				Name:       "8053-tcp",
-				Protocol:   corev1.ProtocolTCP,
-				Port:       8053,
-				TargetPort: intstr.IntOrString{IntVal: 8053},
-			}, {
-				Name:       "8053-udp",
-				Protocol:   corev1.ProtocolUDP,
-				Port:       8053,
-				TargetPort: intstr.IntOrString{IntVal: 8053},
-			}},
-			Selector: map[string]string{
-				"app": fullAppInstanceName,
-			},
-			ClusterIP:  "172.21.103.99",
-			ClusterIPs: []string{"172.21.103.99"},
-			Type:       corev1.ServiceTypeClusterIP,
-		}}
 
 		// Wired Every Resource together to create child resource for create or delete whole dependency
 		controllerutil.SetControllerReference(instance, dep, r.Scheme)
-		controllerutil.SetControllerReference(instance, service, r.Scheme)
 
-		setupLog.Info("DNS Controller: Try to create DaemonSet !")
-
-		err = r.Create(context.TODO(), service)
-		if err != nil {
-			setupLog.Error(err, "DNS Controller: Create Service Endpoint Error :(")
-			return reconcile.Result{}, err
-		} else {
-			setupLog.Info("DNS Controller: Create Service Endpoint Successs :)")
-		}
-
-		err = r.Create(context.TODO(), dep)
+		err = r.Create(context.Background(), dep)
 		if err != nil {
 			setupLog.Error(err, "DNS Controller: Create DaemonSet Error :(")
 			return reconcile.Result{}, err
@@ -205,5 +220,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 func (r *DNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cachev1alpha1.DNS{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
 		Complete(r)
 }

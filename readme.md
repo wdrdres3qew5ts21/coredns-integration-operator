@@ -1,5 +1,8 @@
 ### CoreDNS for mapping DNS Record like using in On-Premise Platform
 
+Version 0.0.35 เป็น Version ที่สามารถ Reconcile Service กับ Deployment ได้แล้วผ่านการทดสอบ
+
+
 https://www.brighttalk.com/webcast/18106/470697?utm_source=brighttalk-portal&utm_medium=web&utm_campaign=channel-feed
 
 https://www.youtube.com/watch?v=89PdRvRUcPU&t=798s
@@ -83,7 +86,7 @@ oc apply -f oc apply -f permission
 
 operator-sdk cleanup coredns-integration-operator
 
-export IMAGE_VERSION=0.0.25
+export IMAGE_VERSION=0.0.36
 
 ./build-push-operator.sh 
 
@@ -92,3 +95,6 @@ operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:$IMAGE_VE
 
 reference API Version 
 https://github.com/deepak1725/hello-operator2
+
+Create ConfigMap Setup Manager
+https://techbloc.net/archives/4630

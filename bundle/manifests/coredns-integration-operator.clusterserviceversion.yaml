@@ -24,7 +24,7 @@ metadata:
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.17.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
-  name: coredns-integration-operator.v0.0.23
+  name: coredns-integration-operator.v0.0.25
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -155,7 +155,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/linxianer12/coredns-integration-operator:0.0.23
+                image: quay.io/linxianer12/coredns-integration-operator:0.0.25
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -230,7 +230,7 @@ spec:
   - network
   links:
   - name: Operator Repository
-    url: https://coredns-integration-operator.domain
+    url: https://github.com/wdrdres3qew5ts21/coredns-integration-operator
   - name: Infrastructure Guide Line
     url: https://github.com/wdrdres3qew5ts21/vm-kubevirt-integration
   maintainers:
@@ -241,4 +241,4 @@ spec:
   maturity: alpha
   provider:
     name: supakorn.t-thesis
-  version: 0.0.23
+  version: 0.0.25

@@ -175,7 +175,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		}}
 
 		// Wired Every Resource together to create child resource for create or delete whole dependency
-		// controllerutil.SetControllerReference(instance, dep, r.Scheme)
+		controllerutil.SetControllerReference(instance, dep, r.Scheme)
 		controllerutil.SetControllerReference(instance, service, r.Scheme)
 
 		setupLog.Info("DNS Controller: Try to create DaemonSet !")

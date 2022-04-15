@@ -7,7 +7,12 @@ https://www.youtube.com/watch?v=89PdRvRUcPU&t=798s
 
 Base Image: https://quay.io/repository/openshift/origin-coredns?tab=info
 
+สร้าง Project ครั้งแรกด้วยคำสั่ง
+```
 operator-sdk init --domain quay.io --repo github.com/wdrdres3qew5ts21/coredns-integration-operator
+```
+Reload CoreDNS แบบทันทีด้วยการ Kill Pod
+https://docs.microsoft.com/en-us/azure/aks/coredns-custom
 
 ## layout Project
 

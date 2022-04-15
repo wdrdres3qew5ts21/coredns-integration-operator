@@ -84,31 +84,25 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 
 	setupLog.Info("DNS Controller: Before Created DaemonSet")
 	if err != nil && errors.IsNotFound(err) {
+		// initialize variable template
+		replicasSize := int32(1)
+		configMapMode := int32(420)
+		dnsZoneConfigMap := "dns-config"
+		appName := "private-dns-"
 		// Creation logic
 		labels := map[string]string{
-			"app": "private-dns" + instance.Name,
+			"app": appName + instance.Name,
 		}
-		size := int32(1)
-		// userSecret := &corev1.EnvVarSource{
-		// 	SecretKeyRef: &corev1.SecretKeySelector{
-		// 		LocalObjectReference: corev1.LocalObjectReference{Name: mysqlAuthName()},
-		// 		Key:                  "username",
-		// 	},
-		// }
-		// passwordSecret := &corev1.EnvVarSource{
-		// 	SecretKeyRef: &corev1.SecretKeySelector{
-		// 		LocalObjectReference: corev1.LocalObjectReference{Name: mysqlAuthName()},
-		// 		Key:                  "password",
-		// 	},
-		// }
-		var configMapMode int32 = 420
+
+		// Create DaemonSet for Private DNS Server
+
 		dep := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "private-dns-" + instance.Name,
+				Name:      appName + instance.Name,
 				Namespace: instance.Namespace,
 			},
 			Spec: appsv1.DeploymentSpec{
-				Replicas: &size,
+				Replicas: &replicasSize,
 				Selector: &metav1.LabelSelector{
 					MatchLabels: labels,
 				},
@@ -118,10 +112,10 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 					},
 					Spec: corev1.PodSpec{
 						Volumes: []corev1.Volume{{
-							Name: "dns-config",
+							Name: dnsZoneConfigMap,
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{Name: "dns-config"},
+									LocalObjectReference: corev1.LocalObjectReference{Name: dnsZoneConfigMap},
 									DefaultMode:          &configMapMode,
 								}},
 						}},
@@ -136,7 +130,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 							Args:    []string{"-dns.port", "8053", "-conf", "/etc/coredns/Corefile"},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name:      "dns-config",
+									Name:      dnsZoneConfigMap,
 									MountPath: "/etc/coredns",
 								},
 							},
@@ -154,6 +148,9 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 							}}},
 					}},
 			}}
+		// Create Kubernetes Service for resolve Private DNS Server
+		dep = &appsv1.Deployment{}
+		// Wired Every Resource together to create child resource for create or delete whole dependency
 		controllerutil.SetControllerReference(instance, dep, r.Scheme)
 
 		createMe := dep // Deployment instance from above // Create the service

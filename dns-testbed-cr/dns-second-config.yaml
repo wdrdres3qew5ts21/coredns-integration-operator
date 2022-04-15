@@ -38,7 +38,7 @@ data:
     $ORIGIN thesis.local.
 
     @ IN SOA dns domains (
-        2020031101   ; serial
+        2020031105   ; serial
         300          ; refresh
         1800         ; retry
         14400        ; expire
@@ -50,4 +50,6 @@ data:
     mock      IN  A  192.168.18.5
     reload      IN  A  192.168.18.5
     update      IN  A  192.168.18.5
+    serial      IN  A  192.168.18.5
+    realtime      IN  A  192.168.18.5
     ;END_PRIVATE_DNS_RECORD

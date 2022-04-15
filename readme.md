@@ -7,17 +7,25 @@ https://www.youtube.com/watch?v=89PdRvRUcPU&t=798s
 
 operator-sdk init --domain quay.io --repo github.com/wdrdres3qew5ts21/coredns-integration-operator
 
-### layout Project
-Manifest Metadata ถูก Generate มาจาก `./config/manifests/bases` ถ้าอยากจะแก้อะไรให้ไปแก้ในนี้แล้วตอนรันคำสั่ง bundle build มันจะนำ metadata ไปด้วย
+## layout Project
+
+### Manifest Metadata Config
+ถูก Generate มาจาก `./config/manifests/bases` ถ้าอยากจะแก้อะไรให้ไปแก้ในนี้แล้วตอนรันคำสั่ง bundle build มันจะนำ metadata ไปด้วย
+
+### Operator Controller Coding
+อยู่ใน directory `./controllers`
+
+
 
 
 Bundle
 https://github.com/operator-framework/operator-registry/blob/master/docs/design/operator-bundle.md
 
 
-
-ทำการติดตั้ง Operator life Cycle ไปยัง Kbuernetes Clsuter เรา
+ทำการติดตั้ง Operator life Cycle ไปยัง Kbuernetes Cluster เราถ้าเกิดใช้ Vanila Kubernetes แล้วไม่มี Operator
+```
 operator-sdk olm install
+```
 
 Build ตัวอย่างโครงโปรเจค
 ```
@@ -65,7 +73,9 @@ https://gist.github.com/vsouza/77e6b20520d07652ed7d
 oc new-project private-dns
 oc apply -f oc apply -f permission 
 
-export IMAGE_VERSION=0.0.17
+operator-sdk cleanup coredns-integration-operator
+
+export IMAGE_VERSION=0.0.18
 
 ./build-push-operator.sh 
 

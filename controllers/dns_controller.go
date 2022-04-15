@@ -86,7 +86,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	if err != nil && errors.IsNotFound(err) {
 		// Creation logic
 		labels := map[string]string{
-			"app": "visitors", "visitorssite_cr": instance.Name, "tier": "mysql",
+			"app": "private-dns", "visitorssite_cr": instance.Name, "tier": "mysql",
 		}
 		size := int32(1)
 		// userSecret := &corev1.EnvVarSource{
@@ -103,7 +103,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		// }
 		dep := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "mysql-backend-service",
+				Name:      "private-dns-" + instance.Name,
 				Namespace: instance.Namespace,
 			},
 			Spec: appsv1.DeploymentSpec{
@@ -117,11 +117,11 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{{
-							Image: "docker.io/mysql:5.7",
-							Name:  "visitors-mysql",
+							Image: "quay.io/openshift/origin-coredns:4.5",
+							Name:  "dns",
 							Ports: []corev1.ContainerPort{{
-								ContainerPort: 3306,
-								Name:          "mysql",
+								ContainerPort: 8053,
+								Name:          "dns",
 							}},
 							Env: []corev1.EnvVar{
 								{

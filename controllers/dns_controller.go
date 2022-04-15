@@ -152,7 +152,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			}}
 		// Create Kubernetes Service for resolve Private DNS Server
 		service := &corev1.Service{ObjectMeta: metav1.ObjectMeta{
-			Name:      "hardcode-service",
+			Name:      fullAppInstanceName,
 			Namespace: instance.Namespace,
 		}, Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{{

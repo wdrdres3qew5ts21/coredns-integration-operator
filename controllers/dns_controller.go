@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -89,16 +90,17 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		configMapMode := int32(420)
 		dnsZoneConfigMap := "dns-config"
 		appName := "private-dns-"
+		fullAppInstanceName := appName + instance.Name
 		// Creation logic
 		labels := map[string]string{
-			"app": appName + instance.Name,
+			"app": fullAppInstanceName,
 		}
 
 		// Create DaemonSet for Private DNS Server
 
 		dep := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      appName + instance.Name,
+				Name:      fullAppInstanceName,
 				Namespace: instance.Namespace,
 			},
 			Spec: appsv1.DeploymentSpec{
@@ -149,19 +151,48 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 					}},
 			}}
 		// Create Kubernetes Service for resolve Private DNS Server
-		dep = &appsv1.Deployment{}
-		// Wired Every Resource together to create child resource for create or delete whole dependency
-		controllerutil.SetControllerReference(instance, dep, r.Scheme)
+		service := &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+			Name:      "hardcode-service",
+			Namespace: instance.Namespace,
+		}, Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{{
+				Name:       "8053-tcp",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       8053,
+				TargetPort: intstr.IntOrString{IntVal: 8053},
+			}, {
+				Name:       "8053-udp",
+				Protocol:   corev1.ProtocolUDP,
+				Port:       8053,
+				TargetPort: intstr.IntOrString{IntVal: 8053},
+			}},
+			Selector: map[string]string{
+				"app": fullAppInstanceName,
+			},
+			ClusterIP:  "172.21.103.99",
+			ClusterIPs: []string{"172.21.103.99"},
+			Type:       corev1.ServiceTypeClusterIP,
+		}}
 
-		createMe := dep // Deployment instance from above // Create the service
+		// Wired Every Resource together to create child resource for create or delete whole dependency
+		// controllerutil.SetControllerReference(instance, dep, r.Scheme)
+		controllerutil.SetControllerReference(instance, service, r.Scheme)
+
 		setupLog.Info("DNS Controller: Try to create DaemonSet !")
-		err = r.Create(context.TODO(), createMe)
+
+		err = r.Create(context.TODO(), service)
 		if err != nil {
-			// Creation failed
+			setupLog.Error(err, "DNS Controller: Create Service Endpoint Error :(")
+			return reconcile.Result{}, err
+		} else {
+			setupLog.Info("DNS Controller: Create Service Endpoint Successs :)")
+		}
+
+		err = r.Create(context.TODO(), dep)
+		if err != nil {
 			setupLog.Error(err, "DNS Controller: Create DaemonSet Error :(")
 			return reconcile.Result{}, err
 		} else {
-			// Creation was successful return nil, nil
 			setupLog.Info("DNS Controller: Create DaemonSet Successs :)")
 		}
 

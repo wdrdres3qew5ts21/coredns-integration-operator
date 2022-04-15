@@ -43,7 +43,7 @@ spec:
   - network
   links:
   - name: Operator Repository
-    url: https://coredns-integration-operator.domain
+    url: https://github.com/wdrdres3qew5ts21/coredns-integration-operator
   - name: Infrastructure Guide Line
     url: https://github.com/wdrdres3qew5ts21/vm-kubevirt-integration
   maintainers:

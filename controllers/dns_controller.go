@@ -101,6 +101,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		// 		Key:                  "password",
 		// 	},
 		// }
+		var configMapMode int32 = 420
 		dep := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "private-dns-" + instance.Name,
@@ -116,6 +117,14 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 						Labels: labels,
 					},
 					Spec: corev1.PodSpec{
+						Volumes: []corev1.Volume{{
+							Name: "dns-config",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{Name: "dns-config"},
+									DefaultMode:          &configMapMode,
+								}},
+						}},
 						Containers: []corev1.Container{{
 							Image: "quay.io/openshift/origin-coredns:4.5",
 							Name:  "dns",
@@ -123,6 +132,14 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 								ContainerPort: 8053,
 								Name:          "dns",
 							}},
+							Command: []string{"/usr/bin/coredns"},
+							Args:    []string{"-dns.port", "8053", "-conf", "/etc/coredns/Corefile"},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "dns-config",
+									MountPath: "/etc/coredns",
+								},
+							},
 							Env: []corev1.EnvVar{
 								{
 									Name:  "TEST_VARIABLE",

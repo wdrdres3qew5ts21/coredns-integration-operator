@@ -5,7 +5,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: coredns-integration-operator-controller-manager
-    namespace: legacy-company
+    namespace: private-dns
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

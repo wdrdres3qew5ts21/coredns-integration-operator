@@ -61,11 +61,16 @@ https://gist.github.com/vsouza/77e6b20520d07652ed7d
 
 
 ### Build Script
+```
+oc new-project private-dns
+oc apply -f oc apply -f permission 
+
 export IMAGE_VERSION=0.0.17
 
 ./build-push-operator.sh 
 
 operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:$IMAGE_VERSION
+```
 
 reference API Version 
 https://github.com/deepak1725/hello-operator2

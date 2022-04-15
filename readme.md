@@ -42,11 +42,13 @@ https://sdk.operatorframework.io/docs/overview/project-layout/
 ### ลง Operator Catalog ใหม่พร้อมติดตั้งใน Namespace Kubernetes Context ที่เรากำลังอยู่
 ใช้คำสั่งเดียวจบ
 ```
-operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:0.0.6
+export IMAGE_VERSION=<Current Version>
+operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:$IMAGE_VERSION
 ```
 ลบการติดตั้ง Catalog 
+```
 operator-sdk cleanup coredns-integration-operator
-
+```
 ### Check Operator Life Cycle
 สำหรับ Openshift จะอยู่ที่ namespace `openshift-operator-lifecycle-manager`
 

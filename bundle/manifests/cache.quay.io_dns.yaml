@@ -17,7 +17,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: DNS is the Schema for the dns API
+        description: DNS Core Service for Internal DNS Server
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,10 +34,41 @@ spec:
           spec:
             description: DNSSpec defines the desired state of DNS
             properties:
-              foo:
-                description: Foo is an example field of DNS. Edit dns_types.go to
-                  remove/update
-                type: string
+              dnsConfigs:
+                description: Select DNS Config CRD which define Zone and Record to
+                  using for DNS Server Query
+                items:
+                  type: string
+                type: array
+              domainZone:
+                description: Domain Zone
+                properties:
+                  dnsRecord:
+                    description: adding  DNS Record for IPv4 or CNAME
+                    items:
+                      description: DNSRecord defines Record for IPv4 or CNAME
+                      properties:
+                        name:
+                          type: string
+                        target:
+                          type: string
+                        type:
+                          enum:
+                          - ipv4
+                          - cname
+                          type: string
+                      required:
+                      - name
+                      - target
+                      - type
+                      type: object
+                    type: array
+                  name:
+                    description: internal zone of Domain like mycompany.local
+                    type: string
+                required:
+                - name
+                type: object
               status:
                 description: DNSStatus defines the observed state of DNS
                 properties:

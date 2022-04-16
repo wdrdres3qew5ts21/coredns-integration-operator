@@ -117,6 +117,25 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, err
 	}
 
+	// 2.3 Check if the ConfigMap Endpoint already exists, and create one if not exists.
+	foundConfigMap := &corev1.ConfigMap{}
+	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundConfigMap)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new ConfigMap
+		configMap := r.configMapForDNS(instance, fullAppInstanceName)
+		log.Info("2.3  Check if the ConfigMap already exists, if not create a new one. Creating a new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
+		err = r.Create(ctx, configMap)
+		if err != nil {
+			log.Error(err, "2.3  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to create new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
+			return ctrl.Result{}, err
+		}
+		// ConfigMap created successfully - return and requeue
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		log.Error(err, "2.3  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to get ConfigMap")
+		return ctrl.Result{}, err
+	}
+
 	// 4. Update the DNS status with the pod names
 	// List the pods for this DNS's deployment
 	podList := &corev1.PodList{}
@@ -149,10 +168,54 @@ func (r *DNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&cachev1alpha1.DNS{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&corev1.ConfigMap{}).
 		Complete(r)
 }
 
-// deploymentForDNS returns a DNS Deployment object
+// serviceForDNS returns a DNS Service object
+func (r *DNSReconciler) configMapForDNS(instance *cachev1alpha1.DNS, fullAppInstanceName string) *corev1.ConfigMap {
+	// Create Kubernetes Service for resolve Private DNS Server
+
+	domainZone := instance.Spec.DomainZone.Name
+	dnsRecords := instance.Spec.DomainZone.DNSRecords
+	var dnsRecordResult string = "\n"
+
+	// dnsRecordResult := make([]string, len(dnsRecords))
+	for _, record := range dnsRecords {
+		dnsRecordResult = record.Name + " in " + string(record.RecordType) + " " + record.Target + "\n"
+	}
+	configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+		Name:      fullAppInstanceName,
+		Namespace: instance.Namespace,
+		Labels:    labelsForDNS(fullAppInstanceName),
+	}, Data: map[string]string{
+		"Corefile": domainZone + `:8053 {
+			reload 3s
+			erratic
+			errors
+			log stdout
+			file /etc/coredns/` + domainZone + `
+		}`,
+		domainZone: `
+		$TTL    1800
+		$ORIGIN ` + domainZone + `.
+		
+		@ IN SOA dns domains (
+			2020031101   ; serial
+			300          ; refresh
+			1800         ; retry
+			14400        ; expire
+			300 )        ; minimum
+		
+		;PRIVATE_DNS_RECORD` +
+			dnsRecordResult +
+			`;END_PRIVATE_DNS_RECORD`,
+	}}
+	ctrl.SetControllerReference(instance, configMap, r.Scheme)
+	return configMap
+}
+
+// serviceForDNS returns a DNS Service object
 func (r *DNSReconciler) serviceForDNS(instance *cachev1alpha1.DNS, fullAppInstanceName string) *corev1.Service {
 	// Create Kubernetes Service for resolve Private DNS Server
 	service := &corev1.Service{ObjectMeta: metav1.ObjectMeta{

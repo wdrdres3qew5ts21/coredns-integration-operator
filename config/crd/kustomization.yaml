@@ -3,7 +3,8 @@
 # It should be run by config/default
 resources:
 - bases/cache.quay.io_dns.yaml
-- bases/cache.quay.io_dnsrecords.yaml
+# - bases/cache.quay.io_dnsrecords.yaml
+
 #+kubebuilder:scaffold:crdkustomizeresource
 
 # patchesStrategicMerge:

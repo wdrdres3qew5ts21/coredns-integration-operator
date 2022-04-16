@@ -10,15 +10,15 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: DNS is the Schema for the dns API
-      displayName: DNS
-      kind: DNS
-      name: dns.cache.quay.io
-      version: v1alpha1
     - description: DNSRecord is the Schema for the dnsrecords API
       displayName: DNSRecord
       kind: DNSRecord
       name: dnsrecords.cache.quay.io
+      version: v1alpha1
+    - description: DNS Core Service for Internal DNS Server
+      displayName: DNS
+      kind: DNS
+      name: dns.cache.quay.io
       version: v1alpha1
   description: Chula Software Engineer Thesis CoreDNS for mapping DNS Record like
     using in On-Premise Platform

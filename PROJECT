@@ -16,13 +16,13 @@ resources:
   kind: DNS
   path: github.com/wdrdres3qew5ts21/coredns-integration-operator/api/v1alpha1
   version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: quay.io
-  group: cache
-  kind: DNSRecord
-  path: github.com/wdrdres3qew5ts21/coredns-integration-operator/api/v1alpha1
-  version: v1alpha1
+# - api:
+#     crdVersion: v1
+#     namespaced: true
+#   controller: true
+#   domain: quay.io
+#   group: cache
+#   kind: DNSRecord
+#   path: github.com/wdrdres3qew5ts21/coredns-integration-operator/api/v1alpha1
+#   version: v1alpha1
 version: "3"

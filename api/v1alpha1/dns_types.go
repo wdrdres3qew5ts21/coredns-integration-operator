@@ -28,10 +28,30 @@ type DNSSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of DNS. Edit dns_types.go to remove/update
-	Foo    string    `json:"foo,omitempty"`
-	Status DNSStatus `json:"status,omitempty"`
+	// Select DNS Config CRD which define Zone and Record to using for DNS Server Query
+	DNSConfigs []string `json:"dnsConfigs,omitempty"`
+	// Domain Zone
+	DomainZone DomainZone `json:"domainZone,omitempty"`
+	Status     DNSStatus  `json:"status,omitempty"`
 }
+
+// DomainZone defines DNS Zone
+type DomainZone struct {
+	// internal zone of Domain like mycompany.local
+	Name string `json:"name"`
+	// adding  DNS Record for IPv4 or CNAME
+	DNSRecords []DNSRecord `json:"dnsRecord,omitempty"`
+}
+
+// DNSRecord defines Record for IPv4 or CNAME
+type DNSRecord struct {
+	Name       string     `json:"name"`
+	RecordType RecordType `json:"type"`
+	Target     string     `json:"target"`
+}
+
+// +kubebuilder:validation:Enum=ipv4;cname
+type RecordType string
 
 // DNSStatus defines the observed state of DNS
 type DNSStatus struct {
@@ -43,7 +63,7 @@ type DNSStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// DNS is the Schema for the dns API
+// DNS Core Service for Internal DNS Server
 type DNS struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

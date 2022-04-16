@@ -1,0 +1,15 @@
+apiVersion: cache.quay.io/v1alpha1
+kind: DNS
+metadata:
+  name: napzz
+  namespace: private-dns
+spec:
+  domainZone:
+    dnsRecord:
+      - name: operator
+        target: 192.168.18.5
+        type: A
+      - name: alias
+        target: operator
+        type: CNAME
+    name: napzz-company.local

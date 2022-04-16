@@ -12,6 +12,7 @@
 1. สร้าง DNS Server ผ่าน CRD  [ทำได้แล้ว]
 2. เพิ่ม DNSRecord สำหรับ A และ CNAME [ทำได้แล้ว]
 3. ตรวจจับการเปลี่ยนแปลง CRD ของ DNSRecord และทำการอัพเดท ConfigMap ให้ CoreDNS ใช้ Record ใหม่ที่เพิ่มเข้าไปในจังหวะ runtime [กำลังทำ]
+4. Redeploy DaemonSet หลังจาก ConfigMap ข้อ 3) ถูกอัพเดทสำเร็จเพื่อบังคับ Reload Config ทันที [กำลังทำ]
 
 
 ### Create API and Resource

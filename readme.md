@@ -2,6 +2,11 @@
 
 Version 0.0.54 เป็น Version ที่สามารถ Reconcile Service กับ Deployment ได้แล้วและแก้บั้คหา Resource ไม่เจอได้สำเร็จด้วยการให้ selector Client สามารถทำแบบ Dynamic ได้ตาม Resource ที่เป็นคนสร้างขึ้นมา
 
+1. ใช้คำสั่ง `make install` เพื่อติดตั้ง CRD File Manifest ทั้งหมดไปยัง Cluster โดยไม่ต้อง Deploy Push ไปที่ Image Registry แต่วิธีนี้จะไม่ถูกจัดการผ่าน Operator Life Cycle Management และไม่เห็น UI ใน Openshift
+2. ใช้คำสั่ง `make run` เพื่อ run manager controller pod local ที่ laptop เราเพื่อ debug Operator โดยไม่ต้อง Deploy Application จริงๆผ่าน Operator Life Cycle Manager
+
+
+### Create API and Resource
 
 https://www.brighttalk.com/webcast/18106/470697?utm_source=brighttalk-portal&utm_medium=web&utm_campaign=channel-feed
 
@@ -24,8 +29,6 @@ https://docs.microsoft.com/en-us/azure/aks/coredns-custom
 
 ### Operator Controller Coding
 อยู่ใน directory `./controllers`
-
-
 
 
 Bundle

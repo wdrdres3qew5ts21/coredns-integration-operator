@@ -79,6 +79,26 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	log.Info("1. Fetch the DNS instance. DNS resource found", "DNS.Name", instance.Name, "DNS.Namespace", instance.Namespace)
 
 	fullAppInstanceName := appName + instance.Name
+
+	// 2.0 Check if the ConfigMap Endpoint already exists, and create one if not exists.
+	foundConfigMap := &corev1.ConfigMap{}
+	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundConfigMap)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new ConfigMap
+		configMap := r.configMapForDNS(instance, fullAppInstanceName)
+		log.Info("2.3  Check if the ConfigMap already exists, if not create a new one. Creating a new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
+		err = r.Create(ctx, configMap)
+		if err != nil {
+			log.Error(err, "2.3  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to create new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
+			return ctrl.Result{}, err
+		}
+		// ConfigMap created successfully - return and requeue
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		log.Error(err, "2.3  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to get ConfigMap")
+		return ctrl.Result{}, err
+	}
+
 	// 2.1 Check if the deployment already exists, and create one if not exists.
 	foundDeployment := &appsv1.Deployment{}
 	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundDeployment)
@@ -114,25 +134,6 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		log.Error(err, "2.2  Check if the Service Endpoint already exists, if not create a new one. Failed to get Service Endpoint")
-		return ctrl.Result{}, err
-	}
-
-	// 2.3 Check if the ConfigMap Endpoint already exists, and create one if not exists.
-	foundConfigMap := &corev1.ConfigMap{}
-	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundConfigMap)
-	if err != nil && errors.IsNotFound(err) {
-		// Define a new ConfigMap
-		configMap := r.configMapForDNS(instance, fullAppInstanceName)
-		log.Info("2.3  Check if the ConfigMap already exists, if not create a new one. Creating a new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
-		err = r.Create(ctx, configMap)
-		if err != nil {
-			log.Error(err, "2.3  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to create new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
-			return ctrl.Result{}, err
-		}
-		// ConfigMap created successfully - return and requeue
-		return ctrl.Result{Requeue: true}, nil
-	} else if err != nil {
-		log.Error(err, "2.3  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to get ConfigMap")
 		return ctrl.Result{}, err
 	}
 
@@ -265,10 +266,10 @@ func (r *DNSReconciler) deploymentForDNS(instance *cachev1alpha1.DNS, fullAppIns
 				},
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{{
-						Name: dnsZoneConfigMap,
+						Name: fullAppInstanceName,
 						VolumeSource: corev1.VolumeSource{
 							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{Name: dnsZoneConfigMap},
+								LocalObjectReference: corev1.LocalObjectReference{Name: fullAppInstanceName},
 								DefaultMode:          &configMapMode,
 							}},
 					}},
@@ -283,7 +284,7 @@ func (r *DNSReconciler) deploymentForDNS(instance *cachev1alpha1.DNS, fullAppIns
 						Args:    []string{"-dns.port", "8053", "-conf", "/etc/coredns/Corefile"},
 						VolumeMounts: []corev1.VolumeMount{
 							{
-								Name:      dnsZoneConfigMap,
+								Name:      fullAppInstanceName,
 								MountPath: "/etc/coredns",
 							},
 						},

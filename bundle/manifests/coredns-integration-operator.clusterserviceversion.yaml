@@ -24,7 +24,7 @@ metadata:
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.17.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
-  name: coredns-integration-operator.v0.0.36
+  name: coredns-integration-operator.v0.0.54
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -50,6 +50,18 @@ spec:
     spec:
       clusterPermissions:
       - rules:
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - cache.quay.io
           resources:
@@ -103,6 +115,13 @@ spec:
           - patch
           - update
         - apiGroups:
+          - ""
+          resources:
+          - pods
+          verbs:
+          - get
+          - list
+        - apiGroups:
           - authentication.k8s.io
           resources:
           - tokenreviews
@@ -155,7 +174,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/linxianer12/coredns-integration-operator:0.0.36
+                image: quay.io/linxianer12/coredns-integration-operator:0.0.54
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -241,4 +260,4 @@ spec:
   maturity: alpha
   provider:
     name: supakorn.t-thesis
-  version: 0.0.36
+  version: 0.0.54

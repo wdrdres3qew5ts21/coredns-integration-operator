@@ -1,5 +1,5 @@
 /*
-Copyright 2022.
+Copyright 2021.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,21 +18,25 @@ package controllers
 
 import (
 	"context"
+	"reflect"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	cachev1alpha1 "github.com/wdrdres3qew5ts21/coredns-integration-operator/api/v1alpha1"
+)
+
+const (
+	appName          = "private-dns-"
+	dnsZoneConfigMap = "dns-config"
 )
 
 // DNSReconciler reconciles a DNS object
@@ -41,13 +45,11 @@ type DNSReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-var (
-	setupLog = ctrl.Log.WithName("setup")
-)
-
 //+kubebuilder:rbac:groups=cache.quay.io,resources=dns,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cache.quay.io,resources=dns/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cache.quay.io,resources=dns/finalizers,verbs=update
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -57,160 +59,65 @@ var (
 // the user.
 //
 // For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
-	setupLog.Info("DNS Controller: Vanila Log by Supakorn Working")
-
+	// 1. Fetch the DNS instance
 	instance := &cachev1alpha1.DNS{}
-	err := r.Client.Get(context.Background(), req.NamespacedName, instance)
-
-	setupLog.Info("====== Validate Err Object =======")
-	setupLog.Error(err, "Here is Bug")
-	setupLog.Info("======================")
+	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			setupLog.Info("DNS resource not found. Ignoring since object must be deleted")
-			setupLog.Info("DNS Controller: Delete DaemonSet ;)")
-			return reconcile.Result{}, nil
+			log.Info("1. Fetch the DNS instance. DNS resource not found. Ignoring since object must be deleted")
+			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		return reconcile.Result{}, err
+		log.Error(err, "1. Fetch the DNS instance. Failed to get Mmecached")
+		return ctrl.Result{}, err
 	}
+	log.Info("1. Fetch the DNS instance. DNS resource found", "DNS.Name", instance.Name, "DNS.Namespace", instance.Namespace)
 
-	// Initialize Variable template
-	replicasSize := int32(1)
-	configMapMode := int32(420)
-	dnsZoneConfigMap := "dns-config"
-	appName := "private-dns-"
 	fullAppInstanceName := appName + instance.Name
-
-	setupLog.Info("DNS Controller: Escape Error from first error success")
-	findMe := types.NamespacedName{
-		Name:      instance.Name,
-		Namespace: instance.Namespace,
-	}
-
-	foundService := &corev1.Service{}
-	err = r.Client.Get(ctx, findMe, foundService)
-	setupLog.Info("DNS Controller: Before Created Service Endpoint")
-	if err != nil && errors.IsNotFound(err) {
-		// Create Kubernetes Service for resolve Private DNS Server
-		service := &corev1.Service{ObjectMeta: metav1.ObjectMeta{
-			Name:      fullAppInstanceName,
-			Namespace: instance.Namespace,
-			Labels: map[string]string{
-				"app": fullAppInstanceName,
-			},
-		}, Spec: corev1.ServiceSpec{
-			Ports: []corev1.ServicePort{{
-				Name:       "8053-tcp",
-				Protocol:   corev1.ProtocolTCP,
-				Port:       8053,
-				TargetPort: intstr.IntOrString{IntVal: 8053},
-			}, {
-				Name:       "8053-udp",
-				Protocol:   corev1.ProtocolUDP,
-				Port:       8053,
-				TargetPort: intstr.IntOrString{IntVal: 8053},
-			}},
-			Selector: map[string]string{
-				"app": fullAppInstanceName,
-			},
-			// ClusterIP:  "172.21.103.99",
-			// ClusterIPs: []string{"172.21.103.99"},
-			Type: corev1.ServiceTypeClusterIP,
-		}}
-		controllerutil.SetControllerReference(instance, service, r.Scheme)
-
-		setupLog.Info("DNS Controller: Try to create Service Endpoint !")
-
-		err = r.Create(context.Background(), service)
-		if err != nil {
-			setupLog.Error(err, "DNS Controller: Create Service Endpoint Error :(")
-			return reconcile.Result{}, err
-		} else {
-			setupLog.Info("DNS Controller: Create Service Endpoint Successs :)")
-		}
-	}
-
+	// 2. Check if the deployment already exists, and create one if not exists.
 	found := &appsv1.Deployment{}
-	err = r.Client.Get(ctx, findMe, found)
-	setupLog.Info("DNS Controller: Before Created DaemonSet")
+	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-
-		// Creation logic
-		labels := map[string]string{
-			"app": fullAppInstanceName,
-		}
-
-		// Create DaemonSet for Private DNS Server
-		dep := &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fullAppInstanceName,
-				Namespace: instance.Namespace,
-				Labels: map[string]string{
-					"app": fullAppInstanceName,
-				},
-			},
-			Spec: appsv1.DeploymentSpec{
-				Replicas: &replicasSize,
-				Selector: &metav1.LabelSelector{
-					MatchLabels: labels,
-				},
-				Template: corev1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: labels,
-					},
-					Spec: corev1.PodSpec{
-						Volumes: []corev1.Volume{{
-							Name: dnsZoneConfigMap,
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{Name: dnsZoneConfigMap},
-									DefaultMode:          &configMapMode,
-								}},
-						}},
-						Containers: []corev1.Container{{
-							Image: "quay.io/openshift/origin-coredns:4.9",
-							Name:  "dns",
-							Ports: []corev1.ContainerPort{{
-								ContainerPort: 8053,
-								Name:          "dns",
-							}},
-							Command: []string{"/usr/bin/coredns"},
-							Args:    []string{"-dns.port", "8053", "-conf", "/etc/coredns/Corefile"},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      dnsZoneConfigMap,
-									MountPath: "/etc/coredns",
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "TEST_VARIABLE",
-									Value: "thesis-chula-demo",
-								},
-							}}},
-					}},
-			}}
-
-		// Wired Every Resource together to create child resource for create or delete whole dependency
-		controllerutil.SetControllerReference(instance, dep, r.Scheme)
-
-		err = r.Create(context.Background(), dep)
+		// Define a new deployment
+		dep := r.deploymentForDNS(instance, fullAppInstanceName)
+		log.Info("2. Check if the deployment already exists, if not create a new one. Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+		err = r.Create(ctx, dep)
 		if err != nil {
-			setupLog.Error(err, "DNS Controller: Create DaemonSet Error :(")
-			return reconcile.Result{}, err
-		} else {
-			setupLog.Info("DNS Controller: Create DaemonSet Successs :)")
+			log.Error(err, "2. Check if the deployment already exists, if not create a new one. Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+			return ctrl.Result{}, err
 		}
+		// Deployment created successfully - return and requeue
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		log.Error(err, "2. Check if the deployment already exists, if not create a new one. Failed to get Deployment")
+		return ctrl.Result{}, err
+	}
 
+	// 4. Update the DNS status with the pod names
+	// List the pods for this DNS's deployment
+	podList := &corev1.PodList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(instance.Namespace),
+		client.MatchingLabels(labelsForDNS(instance.Name)),
+	}
+	if err = r.List(ctx, podList, listOpts...); err != nil {
+		log.Error(err, "4. Update the DNS status with the pod names. Failed to list pods", "DNS.Namespace", instance.Namespace, "DNS.Name", instance.Name)
+		return ctrl.Result{}, err
+	}
+	podNames := getPodNames(podList.Items)
+	log.Info("4. Update the DNS status with the pod names. Pod list", "podNames", podNames)
+	// Update status.Nodes if needed
+	if !reflect.DeepEqual(podNames, instance.Status.Nodes) {
+		instance.Status.Nodes = podNames
+		err := r.Status().Update(ctx, instance)
+		if err != nil {
+			log.Error(err, "4. Update the DNS status with the pod names. Failed to update DNS status")
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil
@@ -221,6 +128,81 @@ func (r *DNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cachev1alpha1.DNS{}).
 		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Service{}).
 		Complete(r)
+}
+
+// deploymentForDNS returns a DNS Deployment object
+func (r *DNSReconciler) deploymentForDNS(instance *cachev1alpha1.DNS, fullAppInstanceName string) *appsv1.Deployment {
+	replicasSize := int32(1)
+	configMapMode := int32(420)
+	labels := map[string]string{
+		"app": fullAppInstanceName,
+	}
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fullAppInstanceName,
+			Namespace: instance.Namespace,
+			Labels: map[string]string{
+				"app": fullAppInstanceName,
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicasSize,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{{
+						Name: dnsZoneConfigMap,
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{Name: dnsZoneConfigMap},
+								DefaultMode:          &configMapMode,
+							}},
+					}},
+					Containers: []corev1.Container{{
+						Image: "quay.io/openshift/origin-coredns:4.9",
+						Name:  "dns",
+						Ports: []corev1.ContainerPort{{
+							ContainerPort: 8053,
+							Name:          "dns",
+						}},
+						Command: []string{"/usr/bin/coredns"},
+						Args:    []string{"-dns.port", "8053", "-conf", "/etc/coredns/Corefile"},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								Name:      dnsZoneConfigMap,
+								MountPath: "/etc/coredns",
+							},
+						},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "TEST_VARIABLE",
+								Value: "thesis-chula-demo",
+							},
+						}}},
+				}},
+		}}
+	// Set DNS instance as the owner and controller
+	ctrl.SetControllerReference(instance, dep, r.Scheme)
+	return dep
+}
+
+// labelsForDNS returns the labels for selecting the resources
+// belonging to the given DNS CR name.
+func labelsForDNS(name string) map[string]string {
+	return map[string]string{"app": "DNS", "DNS_cr": name}
+}
+
+// getPodNames returns the pod names of the array of pods passed in
+func getPodNames(pods []corev1.Pod) []string {
+	var podNames []string
+	for _, pod := range pods {
+		podNames = append(podNames, pod.Name)
+	}
+	return podNames
 }

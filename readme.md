@@ -1,6 +1,6 @@
 ### CoreDNS for mapping DNS Record like using in On-Premise Platform
 
-Version 0.0.35 เป็น Version ที่สามารถ Reconcile Service กับ Deployment ได้แล้วผ่านการทดสอบ
+Version 0.0.54 เป็น Version ที่สามารถ Reconcile Service กับ Deployment ได้แล้วและแก้บั้คหา Resource ไม่เจอได้สำเร็จด้วยการให้ selector Client สามารถทำแบบ Dynamic ได้ตาม Resource ที่เป็นคนสร้างขึ้นมา
 
 
 https://www.brighttalk.com/webcast/18106/470697?utm_source=brighttalk-portal&utm_medium=web&utm_campaign=channel-feed
@@ -32,7 +32,7 @@ Bundle
 https://github.com/operator-framework/operator-registry/blob/master/docs/design/operator-bundle.md
 
 
-ทำการติดตั้ง Operator life Cycle ไปยัง Kbuernetes Cluster เราถ้าเกิดใช้ Vanila Kubernetes แล้วไม่มี Operator
+ทำการติดตั้ง Operator life Cycle ไปยัง Kubernetes Cluster เราถ้าเกิดใช้ Vanila Kubernetes แล้วไม่มี Operator
 ```
 operator-sdk olm install
 ```
@@ -56,6 +56,15 @@ make bundle-build bundle-push BUNDLE_IMG="quay.io/linxianer12/coredns-integratio
 ```
 https://sdk.operatorframework.io/docs/overview/project-layout/
 
+
+เพิ่มสิทธิ์ให้กับ Golang Operator ถ้าเจอเรื่อง `is forbidden: cannot set blockOwnerDeletion if an ownerReference refers to a resource you can’t set finalizers on:`
+https://sdk.operatorframework.io/docs/faqs/
+
+โดยให้เพิ่ม RBAC Marker ให้ตรงกับ Resource ของเราและตรวจสอบ Noun ให้ดีๆด้วยว่ามีเติม S เป็นแบบ Plural หรือเปล่าเพราะถ้าไม่มีแล้วเราไปเติม S มันก็จะผิดนั่นเอง
+https://book.kubebuilder.io/reference/markers/rbac.html
+```
++kubebuilder:rbac:groups=cache.quay.io,resources=dns/finalizers,verbs=update
+```
 
 ### ลง Operator Catalog ใหม่พร้อมติดตั้งใน Namespace Kubernetes Context ที่เรากำลังอยู่
 ใช้คำสั่งเดียวจบ
@@ -86,9 +95,11 @@ oc apply -f oc apply -f permission
 
 operator-sdk cleanup coredns-integration-operator
 
-export IMAGE_VERSION=0.0.36
+export IMAGE_VERSION=0.0.54
 
 ./build-push-operator.sh 
+
+operator-sdk cleanup coredns-integration-operator
 
 operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:$IMAGE_VERSION
 ```

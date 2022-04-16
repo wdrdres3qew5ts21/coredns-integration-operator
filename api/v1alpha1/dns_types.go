@@ -29,13 +29,15 @@ type DNSSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of DNS. Edit dns_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Foo    string    `json:"foo,omitempty"`
+	Status DNSStatus `json:"status,omitempty"`
 }
 
 // DNSStatus defines the observed state of DNS
 type DNSStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Nodes []string `json:"nodes"`
 }
 
 //+kubebuilder:object:root=true

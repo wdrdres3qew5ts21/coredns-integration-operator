@@ -1,5 +1,7 @@
 ### CoreDNS for mapping DNS Record like using in On-Premise Platform
 
+`Requirement ต้องใช้ Golang 1.17` ไม่งั้นจะมีปัญหากับ Kubernetes Controller JSON object https://github.com/kubernetes-sigs/controller-tools/issues/643
+
 Version 0.0.54 เป็น Version ที่สามารถ Reconcile Service กับ Deployment ได้แล้วและแก้บั้คหา Resource ไม่เจอได้สำเร็จด้วยการให้ selector Client สามารถทำแบบ Dynamic ได้ตาม Resource ที่เป็นคนสร้างขึ้นมา
 
 1. ใช้คำสั่ง `make install` เพื่อติดตั้ง CRD File Manifest ทั้งหมดไปยัง Cluster โดยไม่ต้อง Deploy Push ไปที่ Image Registry แต่วิธีนี้จะไม่ถูกจัดการผ่าน Operator Life Cycle Management และไม่เห็น UI ใน Openshift

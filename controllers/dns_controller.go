@@ -182,7 +182,7 @@ func (r *DNSReconciler) configMapForDNS(instance *cachev1alpha1.DNS, fullAppInst
 
 	// dnsRecordResult := make([]string, len(dnsRecords))
 	for _, record := range dnsRecords {
-		dnsRecordResult = record.Name + " in " + string(record.RecordType) + " " + record.Target + "\n"
+		dnsRecordResult = record.Name + " IN " + string(record.RecordType) + " " + record.Target + "\n"
 	}
 	configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
 		Name:      fullAppInstanceName,

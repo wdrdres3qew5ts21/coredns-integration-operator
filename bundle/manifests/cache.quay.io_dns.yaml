@@ -54,8 +54,8 @@ spec:
                           type: string
                         type:
                           enum:
-                          - ipv4
-                          - cname
+                          - A
+                          - CNAME
                           type: string
                       required:
                       - name

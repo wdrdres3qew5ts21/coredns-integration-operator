@@ -50,7 +50,7 @@ type DNSRecord struct {
 	Target     string     `json:"target"`
 }
 
-// +kubebuilder:validation:Enum=ipv4;cname
+// +kubebuilder:validation:Enum=A;CNAME
 type RecordType string
 
 // DNSStatus defines the observed state of DNS

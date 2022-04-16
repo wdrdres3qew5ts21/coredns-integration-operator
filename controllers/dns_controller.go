@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -78,22 +79,41 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	log.Info("1. Fetch the DNS instance. DNS resource found", "DNS.Name", instance.Name, "DNS.Namespace", instance.Namespace)
 
 	fullAppInstanceName := appName + instance.Name
-	// 2. Check if the deployment already exists, and create one if not exists.
-	found := &appsv1.Deployment{}
-	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, found)
+	// 2.1 Check if the deployment already exists, and create one if not exists.
+	foundDeployment := &appsv1.Deployment{}
+	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundDeployment)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new deployment
-		dep := r.deploymentForDNS(instance, fullAppInstanceName)
-		log.Info("2. Check if the deployment already exists, if not create a new one. Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
-		err = r.Create(ctx, dep)
+		deployment := r.deploymentForDNS(instance, fullAppInstanceName)
+		log.Info("2.1  Check if the deployment already exists, if not create a new one. Creating a new Deployment", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
+		err = r.Create(ctx, deployment)
 		if err != nil {
-			log.Error(err, "2. Check if the deployment already exists, if not create a new one. Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+			log.Error(err, "2.1  Check if the deployment already exists, if not create a new one. Failed to create new Deployment", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
 			return ctrl.Result{}, err
 		}
 		// Deployment created successfully - return and requeue
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
-		log.Error(err, "2. Check if the deployment already exists, if not create a new one. Failed to get Deployment")
+		log.Error(err, "2.1  Check if the deployment already exists, if not create a new one. Failed to get Deployment")
+		return ctrl.Result{}, err
+	}
+
+	// 2.2 Check if the Service Endpoint already exists, and create one if not exists.
+	foundService := &corev1.Service{}
+	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundService)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new Service
+		service := r.serviceForDNS(instance, fullAppInstanceName)
+		log.Info("2.2  Check if the Service Endpoint already exists, if not create a new one. Creating a new Service Endpoint", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
+		err = r.Create(ctx, service)
+		if err != nil {
+			log.Error(err, "2.2  Check if the Service Endpoint already exists, if not create a new one. Failed to create new Service Endpoint", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
+			return ctrl.Result{}, err
+		}
+		// Service created successfully - return and requeue
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		log.Error(err, "2.2  Check if the Service Endpoint already exists, if not create a new one. Failed to get Service Endpoint")
 		return ctrl.Result{}, err
 	}
 
@@ -102,7 +122,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(instance.Namespace),
-		client.MatchingLabels(labelsForDNS(instance.Name)),
+		client.MatchingLabels(labelsForDNS(fullAppInstanceName)),
 	}
 	if err = r.List(ctx, podList, listOpts...); err != nil {
 		log.Error(err, "4. Update the DNS status with the pod names. Failed to list pods", "DNS.Namespace", instance.Namespace, "DNS.Name", instance.Name)
@@ -128,32 +148,57 @@ func (r *DNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cachev1alpha1.DNS{}).
 		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
 		Complete(r)
+}
+
+// deploymentForDNS returns a DNS Deployment object
+func (r *DNSReconciler) serviceForDNS(instance *cachev1alpha1.DNS, fullAppInstanceName string) *corev1.Service {
+	// Create Kubernetes Service for resolve Private DNS Server
+	service := &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		Name:      fullAppInstanceName,
+		Namespace: instance.Namespace,
+		Labels:    labelsForDNS(fullAppInstanceName),
+	}, Spec: corev1.ServiceSpec{
+		Ports: []corev1.ServicePort{{
+			Name:       "8053-tcp",
+			Protocol:   corev1.ProtocolTCP,
+			Port:       8053,
+			TargetPort: intstr.IntOrString{IntVal: 8053},
+		}, {
+			Name:       "8053-udp",
+			Protocol:   corev1.ProtocolUDP,
+			Port:       8053,
+			TargetPort: intstr.IntOrString{IntVal: 8053},
+		}},
+		Selector: labelsForDNS(fullAppInstanceName),
+		// ClusterIP:  "172.21.103.99",
+		// ClusterIPs: []string{"172.21.103.99"},
+		Type: corev1.ServiceTypeClusterIP,
+	}}
+	ctrl.SetControllerReference(instance, service, r.Scheme)
+	return service
 }
 
 // deploymentForDNS returns a DNS Deployment object
 func (r *DNSReconciler) deploymentForDNS(instance *cachev1alpha1.DNS, fullAppInstanceName string) *appsv1.Deployment {
 	replicasSize := int32(1)
 	configMapMode := int32(420)
-	labels := map[string]string{
-		"app": fullAppInstanceName,
-	}
+
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fullAppInstanceName,
 			Namespace: instance.Namespace,
-			Labels: map[string]string{
-				"app": fullAppInstanceName,
-			},
+			Labels:    labelsForDNS(fullAppInstanceName),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicasSize,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+				MatchLabels: labelsForDNS(fullAppInstanceName),
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+					Labels: labelsForDNS(fullAppInstanceName),
 				},
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{{
@@ -194,8 +239,10 @@ func (r *DNSReconciler) deploymentForDNS(instance *cachev1alpha1.DNS, fullAppIns
 
 // labelsForDNS returns the labels for selecting the resources
 // belonging to the given DNS CR name.
-func labelsForDNS(name string) map[string]string {
-	return map[string]string{"app": "DNS", "DNS_cr": name}
+func labelsForDNS(fullAppInstanceName string) map[string]string {
+	return map[string]string{
+		"app": fullAppInstanceName,
+	}
 }
 
 // getPodNames returns the pod names of the array of pods passed in

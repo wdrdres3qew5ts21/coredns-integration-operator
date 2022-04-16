@@ -1,0 +1,60 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: dns
+  labels:
+    app: dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dns
+      deployment: dns
+  template:
+    metadata:
+      labels:
+        app: dns
+        deployment: dns
+    spec:
+      volumes:
+        - name: private-dns-napzz
+          configMap:
+            name: private-dns-napzz
+            defaultMode: 420
+        - name: dns-config
+          configMap:
+            name: dns-config
+            defaultMode: 420
+      containers:
+        - resources: {}
+          name: coredns-openshift
+          # command:
+          #   - /usr/bin/coredns
+          # args:
+          #   - '-dns.port'
+          #   - '8053'
+          #   - '-conf'
+          #   - /etc/coredns/Corefile
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: private-dns-napzz
+              mountPath: /etc/coredns
+            - name: dns-config
+              mountPath: /etc/coredns/mock
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          image: 'quay.io/linxianer12/todoapp-frontend:1.0.0'
+          
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+

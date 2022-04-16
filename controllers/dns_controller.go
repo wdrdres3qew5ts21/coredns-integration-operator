@@ -197,20 +197,17 @@ func (r *DNSReconciler) configMapForDNS(instance *cachev1alpha1.DNS, fullAppInst
 			log stdout
 			file /etc/coredns/` + domainZone + `
 		}`,
-		domainZone: `
-		$TTL    1800
-		$ORIGIN ` + domainZone + `.
-		
-		@ IN SOA dns domains (
+		domainZone: "$TTL    1800\n" +
+			"$ORIGIN " + domainZone + ".\n" +
+			`@ IN SOA dns domains (
 			2020031101   ; serial
 			300          ; refresh
 			1800         ; retry
 			14400        ; expire
-			300 )        ; minimum
-		
-		;PRIVATE_DNS_RECORD` +
+			300 )        ; minimum` +
+			"\n;PRIVATE_DNS_RECORD" +
 			dnsRecordResult +
-			`;END_PRIVATE_DNS_RECORD`,
+			";END_PRIVATE_DNS_RECORD\n",
 	}}
 	ctrl.SetControllerReference(instance, configMap, r.Scheme)
 	return configMap

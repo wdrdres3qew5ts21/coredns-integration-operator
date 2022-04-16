@@ -9,7 +9,7 @@ spec:
       - name: operator
         target: 192.168.18.5
         type: A
-      - name: alias
-        target: operator
-        type: CNAME
+      # - name: alias
+      #   target: operator
+      #   type: CNAME
     name: napzz-company.local

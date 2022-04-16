@@ -2,7 +2,8 @@
 
 `Requirement ต้องใช้ Golang 1.17` ไม่งั้นจะมีปัญหากับ Kubernetes Controller JSON object https://github.com/kubernetes-sigs/controller-tools/issues/643
 
-Version 0.0.56 เป็น Version ที่สามารถ Reconcile Service กับ Deployment ได้แล้วและแก้บั้คหา Resource ไม่เจอได้สำเร็จด้วยการให้ selector Client สามารถทำแบบ Dynamic ได้ตาม Resource ที่เป็นคนสร้างขึ้นมา
+Version 0.0.73 เป็น Version ที่สามารถ Reconcile Service กับ Deployment ได้แล้วและแก้บั้คหา Resource ไม่เจอได้สำเร็จด้วยการให้ selector Client สามารถทำแบบ Dynamic ได้ตาม Resource ที่เป็นคนสร้างขึ้นมา
+สามารถใช้งาน DNS Record ทั้ง CNAME และ A Record ได้แล้ว
 
 1. ใช้คำสั่ง `make install` เพื่อติดตั้ง CRD File Manifest ทั้งหมดไปยัง Cluster โดยไม่ต้อง Deploy Push ไปที่ Image Registry แต่วิธีนี้จะไม่ถูกจัดการผ่าน Operator Life Cycle Management และไม่เห็น UI ใน Openshift
 2. ใช้คำสั่ง `make run` เพื่อ run manager controller pod local ที่ laptop เราเพื่อ debug Operator โดยไม่ต้อง Deploy Application จริงๆผ่าน Operator Life Cycle Manager

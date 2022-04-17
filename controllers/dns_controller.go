@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"reflect"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -109,6 +110,27 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		err := r.Update(ctx, foundConfigMap)
 		if err != nil {
 			log.Error(err, "Failed to update ConfigMap", "ConfigMap.Namespace", foundConfigMap.Namespace, "ConfigMap.Name", foundConfigMap.Name)
+			return ctrl.Result{}, err
+		}
+		// rollout DaemonSet for take DNSRecord change from ConfigMap
+		foundDeployment := &appsv1.Deployment{}
+		err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundDeployment)
+		if err == nil {
+			// patch ConfigMap
+			patch := client.MergeFrom(foundDeployment.DeepCopy())
+			foundDeployment.Spec.Template.Annotations = map[string]string{
+				"kubectl.kubernetes.io/restartedAt": time.Now().Format(time.RFC3339),
+			}
+			err := r.Patch(ctx, foundDeployment, patch)
+			log.Info("2.0.3  Rollout Deployment", "Deployment.Namespace", foundDeployment.Namespace, "Deployment.Name", foundDeployment.Name)
+			if err != nil {
+				log.Error(err, "2.0.3  Check if Rollout Deployment fail", "Deployment.Namespace", foundDeployment.Namespace, "Deployment.Name", foundDeployment.Name)
+				return ctrl.Result{}, err
+			}
+			// Deployment created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		} else if err != nil {
+			log.Error(err, "2.1  Check if the deployment already exists, if not create a new one. Failed to get Deployment")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil

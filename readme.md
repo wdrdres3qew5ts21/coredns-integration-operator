@@ -107,7 +107,7 @@ oc apply -f oc apply -f permission
 
 operator-sdk cleanup coredns-integration-operator
 
-export IMAGE_VERSION=0.0.76
+export IMAGE_VERSION=0.0.79
 
 ./build-push-operator.sh 
 
@@ -121,3 +121,7 @@ https://github.com/deepak1725/hello-operator2
 
 Create ConfigMap Setup Manager
 https://techbloc.net/archives/4630
+
+
+restart daemonset/deplyoment
+https://stackoverflow.com/questions/59050709/how-to-rollout-restart-deployment-through-the-api

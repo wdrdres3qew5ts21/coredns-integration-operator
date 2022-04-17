@@ -51,7 +51,7 @@ type DNSReconciler struct {
 //+kubebuilder:rbac:groups=cache.quay.io,resources=dns,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cache.quay.io,resources=dns/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cache.quay.io,resources=dns/finalizers,verbs=update
-//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=apps,resources=DaemonSets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -113,45 +113,45 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			return ctrl.Result{}, err
 		}
 		// rollout DaemonSet for take DNSRecord change from ConfigMap
-		foundDeployment := &appsv1.Deployment{}
-		err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundDeployment)
+		foundDaemonSet := &appsv1.DaemonSet{}
+		err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundDaemonSet)
 		if err == nil {
 			// patch ConfigMap
-			patch := client.MergeFrom(foundDeployment.DeepCopy())
-			foundDeployment.Spec.Template.Annotations = map[string]string{
+			patch := client.MergeFrom(foundDaemonSet.DeepCopy())
+			foundDaemonSet.Spec.Template.Annotations = map[string]string{
 				"kubectl.kubernetes.io/restartedAt": time.Now().Format(time.RFC3339),
 			}
-			err := r.Patch(ctx, foundDeployment, patch)
-			log.Info("2.0.3  Rollout Deployment", "Deployment.Namespace", foundDeployment.Namespace, "Deployment.Name", foundDeployment.Name)
+			err := r.Patch(ctx, foundDaemonSet, patch)
+			log.Info("2.0.3  Rollout DaemonSet", "DaemonSet.Namespace", foundDaemonSet.Namespace, "DaemonSet.Name", foundDaemonSet.Name)
 			if err != nil {
-				log.Error(err, "2.0.3  Check if Rollout Deployment fail", "Deployment.Namespace", foundDeployment.Namespace, "Deployment.Name", foundDeployment.Name)
+				log.Error(err, "2.0.3  Check if Rollout DaemonSet fail", "DaemonSet.Namespace", foundDaemonSet.Namespace, "DaemonSet.Name", foundDaemonSet.Name)
 				return ctrl.Result{}, err
 			}
-			// Deployment created successfully - return and requeue
+			// DaemonSet created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		} else if err != nil {
-			log.Error(err, "2.1  Check if the deployment already exists, if not create a new one. Failed to get Deployment")
+			log.Error(err, "2.1  Check if the DaemonSet already exists, if not create a new one. Failed to get DaemonSet")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// 2.1 Check if the deployment already exists, and create one if not exists.
-	foundDeployment := &appsv1.Deployment{}
-	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundDeployment)
+	// 2.1 Check if the DaemonSet already exists, and create one if not exists.
+	foundDaemonSet := &appsv1.DaemonSet{}
+	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundDaemonSet)
 	if err != nil && errors.IsNotFound(err) {
-		// Define a new deployment
-		deployment := r.deploymentForDNS(instance, fullAppInstanceName)
-		log.Info("2.1  Check if the deployment already exists, if not create a new one. Creating a new Deployment", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
-		err = r.Create(ctx, deployment)
+		// Define a new DaemonSet
+		daemonSet := r.DaemonSetForDNS(instance, fullAppInstanceName)
+		log.Info("2.1  Check if the DaemonSet already exists, if not create a new one. Creating a new DaemonSet", "DaemonSet.Namespace", daemonSet.Namespace, "DaemonSet.Name", daemonSet.Name)
+		err = r.Create(ctx, daemonSet)
 		if err != nil {
-			log.Error(err, "2.1  Check if the deployment already exists, if not create a new one. Failed to create new Deployment", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
+			log.Error(err, "2.1  Check if the DaemonSet already exists, if not create a new one. Failed to create new DaemonSet", "DaemonSet.Namespace", daemonSet.Namespace, "DaemonSet.Name", daemonSet.Name)
 			return ctrl.Result{}, err
 		}
-		// Deployment created successfully - return and requeue
+		// DaemonSet created successfully - return and requeue
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
-		log.Error(err, "2.1  Check if the deployment already exists, if not create a new one. Failed to get Deployment")
+		log.Error(err, "2.1  Check if the DaemonSet already exists, if not create a new one. Failed to get DaemonSet")
 		return ctrl.Result{}, err
 	}
 
@@ -175,7 +175,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 
 	// 4. Update the DNS status with the pod names
-	// List the pods for this DNS's deployment
+	// List the pods for this DNS's DaemonSet
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(instance.Namespace),
@@ -204,7 +204,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 func (r *DNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cachev1alpha1.DNS{}).
-		Owns(&appsv1.Deployment{}).
+		Owns(&appsv1.DaemonSet{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.ConfigMap{}).
 		Complete(r)
@@ -278,19 +278,17 @@ func (r *DNSReconciler) serviceForDNS(instance *cachev1alpha1.DNS, fullAppInstan
 	return service
 }
 
-// deploymentForDNS returns a DNS Deployment object
-func (r *DNSReconciler) deploymentForDNS(instance *cachev1alpha1.DNS, fullAppInstanceName string) *appsv1.Deployment {
-	replicasSize := int32(1)
+// DaemonSetForDNS returns a DNS DaemonSet object
+func (r *DNSReconciler) DaemonSetForDNS(instance *cachev1alpha1.DNS, fullAppInstanceName string) *appsv1.DaemonSet {
 	configMapMode := int32(420)
 
-	dep := &appsv1.Deployment{
+	dep := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fullAppInstanceName,
 			Namespace: instance.Namespace,
 			Labels:    labelsForDNS(fullAppInstanceName),
 		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicasSize,
+		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labelsForDNS(fullAppInstanceName),
 			},

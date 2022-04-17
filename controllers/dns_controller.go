@@ -20,6 +20,7 @@ import (
 	"context"
 	"reflect"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -80,23 +81,37 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 
 	fullAppInstanceName := appName + instance.Name
 
-	// 2.0 Check if the ConfigMap Endpoint already exists, and create one if not exists.
 	foundConfigMap := &corev1.ConfigMap{}
 	err = r.Get(ctx, types.NamespacedName{Name: fullAppInstanceName, Namespace: instance.Namespace}, foundConfigMap)
+
+	// 2.0 Check if the ConfigMap Endpoint already exists, and create one if not exists.
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new ConfigMap
 		configMap := r.configMapForDNS(instance, fullAppInstanceName)
-		log.Info("2.3  Check if the ConfigMap already exists, if not create a new one. Creating a new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
+		log.Info("2.0.1  Check if the ConfigMap already exists, if not create a new one. Creating a new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
 		err = r.Create(ctx, configMap)
 		if err != nil {
-			log.Error(err, "2.3  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to create new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
+			log.Error(err, "2.0.1  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to create new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
 			return ctrl.Result{}, err
 		}
 		// ConfigMap created successfully - return and requeue
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
-		log.Error(err, "2.3  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to get ConfigMap")
+		log.Error(err, "2.0.1  Check if the ConfigMap Endpoint already exists, if not create a new one. Failed to get ConfigMap")
+
 		return ctrl.Result{}, err
+	}
+	// Check if CRD had been changed so it will redeploy ConfigMap or Update
+	configMap := r.configMapForDNS(instance, fullAppInstanceName)
+	if !equality.Semantic.DeepDerivative(configMap.Data, foundConfigMap.Data) {
+		foundConfigMap = configMap
+		log.Info("2.0.2 Updating ConfigMap", "ConfigMap.Namespace", foundConfigMap.Namespace, "ConfigMap.Name", foundConfigMap.Name)
+		err := r.Update(ctx, foundConfigMap)
+		if err != nil {
+			log.Error(err, "Failed to update ConfigMap", "ConfigMap.Namespace", foundConfigMap.Namespace, "ConfigMap.Name", foundConfigMap.Name)
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// 2.1 Check if the deployment already exists, and create one if not exists.

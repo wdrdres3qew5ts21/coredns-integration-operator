@@ -107,7 +107,7 @@ oc apply -f oc apply -f permission
 
 operator-sdk cleanup coredns-integration-operator
 
-export IMAGE_VERSION=0.0.73
+export IMAGE_VERSION=0.0.75
 
 ./build-push-operator.sh 
 

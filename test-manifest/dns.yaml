@@ -12,4 +12,7 @@ spec:
       - name: alias
         target: operator
         type: CNAME
+      - name: update
+        target: operator
+        type: CNAME
     name: napzz-company.local

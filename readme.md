@@ -2,15 +2,15 @@
 
 `Requirement ต้องใช้ Golang 1.17` ไม่งั้นจะมีปัญหากับ Kubernetes Controller JSON object https://github.com/kubernetes-sigs/controller-tools/issues/643
 
-`Version 0.0.82` เป็น Version ที่สามารถ Reconcile Service กับ Deployment ได้แล้วและแก้บั้คหา Resource ไม่เจอได้สำเร็จด้วยการให้ selector Client สามารถทำแบบ Dynamic ได้ตาม Resource ที่เป็นคนสร้างขึ้นมา
-สามารถใช้งาน DNS Record ทั้ง CNAME และ A Record ได้แล้ว
+`Version 0.0.88` เป็น Version ที่สามารถ Reconcile Service กับ Deployment ได้แล้วและแก้บั้คหา Resource ไม่เจอได้สำเร็จด้วยการให้ selector Client สามารถทำแบบ Dynamic ได้ตาม Resource ที่เป็นคนสร้างขึ้นมา
+สามารถใช้งาน DNS Record ทั้ง CNAME และ A Record ได้แล้ว และใช้ได้หลาย Internal Zone
 
 1. ใช้คำสั่ง `make install` เพื่อติดตั้ง CRD File Manifest ทั้งหมดไปยัง Cluster โดยไม่ต้อง Deploy Push ไปที่ Image Registry แต่วิธีนี้จะไม่ถูกจัดการผ่าน Operator Life Cycle Management และไม่เห็น UI ใน Openshift
 2. ใช้คำสั่ง `make run` เพื่อ run manager controller pod local ที่ laptop เราเพื่อ debug Operator โดยไม่ต้อง Deploy Application จริงๆผ่าน Operator Life Cycle Manager
 
 #### Todo List Feature ที่ต้องทำ 
 1. สร้าง DNS Server ผ่าน CRD  [ทำได้แล้ว]
-2. เพิ่ม DNSRecord สำหรับ A และ CNAME [ทำได้แล้ว]
+2. เพิ่ม DNSRecord สำหรับ A และ CNAME ได้หลาย Zone [ทำได้แล้ว]
 3. ตรวจจับการเปลี่ยนแปลง CRD ของ DNSRecord และทำการอัพเดท ConfigMap ให้ CoreDNS ใช้ Record ใหม่ที่เพิ่มเข้าไปในจังหวะ runtime [ทำได้แล้ว]
 4. Redeploy DaemonSet หลังจาก ConfigMap ข้อ 3) ถูกอัพเดทสำเร็จเพื่อบังคับ Reload Config ทันที [ทำได้แล้ว]
 
@@ -105,9 +105,11 @@ https://gist.github.com/vsouza/77e6b20520d07652ed7d
 oc new-project private-dns
 oc apply -f oc apply -f permission 
 
+oc project private-dns
+
 operator-sdk cleanup coredns-integration-operator
 
-export IMAGE_VERSION=0.0.82
+export IMAGE_VERSION=0.0.88
 
 ./build-push-operator.sh 
 

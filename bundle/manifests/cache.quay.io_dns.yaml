@@ -34,41 +34,38 @@ spec:
           spec:
             description: DNSSpec defines the desired state of DNS
             properties:
-              dnsConfigs:
-                description: Select DNS Config CRD which define Zone and Record to
-                  using for DNS Server Query
+              domainZones:
+                description: Domain Zone List
                 items:
-                  type: string
+                  description: DomainZone defines DNS Zone
+                  properties:
+                    dnsRecord:
+                      description: adding  DNS Record for IPv4 or CNAME
+                      items:
+                        description: DNSRecord defines Record for IPv4 or CNAME
+                        properties:
+                          name:
+                            type: string
+                          target:
+                            type: string
+                          type:
+                            enum:
+                            - A
+                            - CNAME
+                            type: string
+                        required:
+                        - name
+                        - target
+                        - type
+                        type: object
+                      type: array
+                    name:
+                      description: internal zone of Domain like mycompany.local
+                      type: string
+                  required:
+                  - name
+                  type: object
                 type: array
-              domainZone:
-                description: Domain Zone
-                properties:
-                  dnsRecord:
-                    description: adding  DNS Record for IPv4 or CNAME
-                    items:
-                      description: DNSRecord defines Record for IPv4 or CNAME
-                      properties:
-                        name:
-                          type: string
-                        target:
-                          type: string
-                        type:
-                          enum:
-                          - A
-                          - CNAME
-                          type: string
-                      required:
-                      - name
-                      - target
-                      - type
-                      type: object
-                    type: array
-                  name:
-                    description: internal zone of Domain like mycompany.local
-                    type: string
-                required:
-                - name
-                type: object
               status:
                 description: DNSStatus defines the observed state of DNS
                 properties:

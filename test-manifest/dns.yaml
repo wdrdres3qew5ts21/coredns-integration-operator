@@ -4,15 +4,20 @@ metadata:
   name: napzz
   namespace: private-dns
 spec:
-  domainZone:
-    dnsRecord:
-      - name: operator
-        target: 192.168.18.5
-        type: A
-      - name: alias
-        target: operator
-        type: CNAME
-      - name: update
-        target: operator
-        type: CNAME
-    name: napzz-company.local
+  domainZones:
+    - dnsRecord:
+        - name: web
+          target: 192.168.18.5
+          type: A
+        - name: crm
+          target: 192.168.18.4
+          type: A
+      name: napzz-company.local
+    - dnsRecord:
+        - name: web
+          target: 192.168.18.4
+          type: A
+        - name: backend
+          target: 192.168.18.5
+          type: A
+      name: thesis.local

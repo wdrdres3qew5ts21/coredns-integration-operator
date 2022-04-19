@@ -28,11 +28,9 @@ type DNSSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Select DNS Config CRD which define Zone and Record to using for DNS Server Query
-	DNSConfigs []string `json:"dnsConfigs,omitempty"`
-	// Domain Zone
-	DomainZone DomainZone `json:"domainZone,omitempty"`
-	Status     DNSStatus  `json:"status,omitempty"`
+	// Domain Zone List
+	DomainZones []DomainZone `json:"domainZones,omitempty"`
+	Status      DNSStatus    `json:"status,omitempty"`
 }
 
 // DomainZone defines DNS Zone

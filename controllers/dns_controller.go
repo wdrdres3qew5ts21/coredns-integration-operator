@@ -75,7 +75,7 @@ func (r *DNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		log.Error(err, "1. Fetch the DNS instance. Failed to get Mmecached")
+		log.Error(err, "1. Fetch the DNS instance. Failed to get DNS")
 		return ctrl.Result{}, err
 	}
 	log.Info("1. Fetch the DNS instance. DNS resource found", "DNS.Name", instance.Name, "DNS.Namespace", instance.Namespace)
@@ -214,38 +214,44 @@ func (r *DNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *DNSReconciler) configMapForDNS(instance *cachev1alpha1.DNS, fullAppInstanceName string) *corev1.ConfigMap {
 	// Create Kubernetes Service for resolve Private DNS Server
 
-	domainZone := instance.Spec.DomainZone.Name
-	dnsRecords := instance.Spec.DomainZone.DNSRecords
-	var dnsRecordResult string = "\n"
-
-	// dnsRecordResult := make([]string, len(dnsRecords))
-	for _, record := range dnsRecords {
-		dnsRecordResult += record.Name + " IN " + string(record.RecordType) + " " + record.Target + "\n"
-	}
-	configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
-		Name:      fullAppInstanceName,
-		Namespace: instance.Namespace,
-		Labels:    labelsForDNS(fullAppInstanceName),
-	}, Data: map[string]string{
-		"Corefile": domainZone + `:8053 {
+	corefileResult := ""
+	dnsRecordZoneMap := make(map[string]string)
+	// Corefile Result List
+	for i, zone := range instance.Spec.DomainZones {
+		corefileResult += zone.Name + `:8053 {
 			reload 3s
 			erratic
 			errors
 			log stdout
-			file /etc/coredns/` + domainZone + `
-		}`,
-		domainZone: "$TTL    1800\n" +
-			"$ORIGIN " + domainZone + ".\n" +
+			file /etc/coredns/` + zone.Name + `
+		}` + "\n"
+
+		// Zone Record Generated
+		dnsRecords := instance.Spec.DomainZones[i].DNSRecords
+		var dnsRecordResult string = "\n"
+		for _, record := range dnsRecords {
+			dnsRecordResult += record.Name + " IN " + string(record.RecordType) + " " + record.Target + "\n"
+		}
+		dnsRecordZoneMap[zone.Name] = "$TTL    1800\n" +
+			"$ORIGIN " + zone.Name + ".\n" +
 			`@ IN SOA dns domains (
-			2020031101   ; serial
-			300          ; refresh
-			1800         ; retry
-			14400        ; expire
-			300 )        ; minimum` +
+		2020031101   ; serial
+		300          ; refresh
+		1800         ; retry
+		14400        ; expire
+		300 )        ; minimum` +
 			"\n;PRIVATE_DNS_RECORD" +
 			dnsRecordResult +
-			";END_PRIVATE_DNS_RECORD\n",
-	}}
+			";END_PRIVATE_DNS_RECORD\n"
+	}
+	dnsRecordZoneMap["Corefile"] = corefileResult
+
+	// Final Result Corefile for CoreDNS configuration
+	configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+		Name:      fullAppInstanceName,
+		Namespace: instance.Namespace,
+		Labels:    labelsForDNS(fullAppInstanceName),
+	}, Data: dnsRecordZoneMap}
 	ctrl.SetControllerReference(instance, configMap, r.Scheme)
 	return configMap
 }
@@ -281,7 +287,27 @@ func (r *DNSReconciler) serviceForDNS(instance *cachev1alpha1.DNS, fullAppInstan
 // DaemonSetForDNS returns a DNS DaemonSet object
 func (r *DNSReconciler) DaemonSetForDNS(instance *cachev1alpha1.DNS, fullAppInstanceName string) *appsv1.DaemonSet {
 	configMapMode := int32(420)
+	// dynamic mount volume
+	// volumeList := []corev1.Volume{corev1.Volume{}, corev1.Volume{}}
+	// volumeMount := []corev1.VolumeMount{
+	// 	{
+	// 		Name:      fullAppInstanceName,
+	// 		MountPath: "/etc/coredns",
+	// 	},
+	// }
+	// for i, zone := range instance.Spec.DomainZones {
+	// 	log.Log.Info("Inside Loop of hard")
+	// 	volumeList[i] = corev1.Volume{
+	// 		Name: strings.ReplaceAll(zone.Name, ".", "-"),
+	// 		VolumeSource: corev1.VolumeSource{
+	// 			ConfigMap: &corev1.ConfigMapVolumeSource{
+	// 				LocalObjectReference: corev1.LocalObjectReference{Name: zone.Name},
+	// 				DefaultMode:          &configMapMode,
+	// 			}},
+	// 	}
+	// }
 
+	// Generate DaemonSet
 	dep := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fullAppInstanceName,

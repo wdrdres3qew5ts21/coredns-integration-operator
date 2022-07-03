@@ -98,24 +98,29 @@ operator-sdk olm status --olm-namespace openshift-operator-lifecycle-manager
 ### Setup Go Environment
 https://gist.github.com/vsouza/77e6b20520d07652ed7d
 
+ต้องมีสิทธิ cluster-admin ในการติดตั้งด้วย
 
 ### Build Script
 เราจะทดสอบใน `private-dns` Namespace
 ```
+export KUBECONFIG=/Users/supakorn.t/ProjectCode/kubevirt-thesis/coredns-integration-operator/kubeconfig
 oc new-project private-dns
-oc apply -f oc apply -f permission 
+oc apply -f permission 
+oc adm policy add-scc-to-user privileged -z coredns-integration-operator-controller-manager
 
 oc project private-dns
 
-operator-sdk cleanup coredns-integration-operator
+operator-sdk --kubeconfig=kubeconfig cleanup coredns-integration-operator
 
-export IMAGE_VERSION=0.0.88
+export IMAGE_VERSION=0.0.89
 
 ./build-push-operator.sh 
 
 operator-sdk cleanup coredns-integration-operator
 
-operator-sdk run bundle quay.io/linxianer12/coredns-integration-bundle:$IMAGE_VERSION
+operator-sdk  run bundle quay.io/linxianer12/coredns-integration-bundle:$IMAGE_VERSION
+
+operator-sdk --kubeconfig=kubeconfig run bundle quay.io/linxianer12/coredns-integration-bundle:$IMAGE_VERSION
 ```
 
 reference API Version 
